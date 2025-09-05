@@ -16,119 +16,213 @@ st.set_page_config(
 # Constants
 BACKEND_URL = "https://jatin12312-text-summarizer.hf.space"
 MAX_TEXT_LENGTH = 50000  # Character limit for input text
-
 st.markdown("""
 <style>
-    /* Global */
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    /* Global App Styling */
     .stApp {
-        background-color: #f9fafb;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
+    /* Main Container */
     .main .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 2rem;
+        margin: 1rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        max-width: 1200px;
     }
     
-    body {
-        font-family: 'Inter', sans-serif;
-        background: #f9fafb;
-        color: #1f2937;
-    }
+    /* Header Styling - Clean and Sharp */
     .main-header {
-        font-size: 3rem;
-        font-weight: 800;
-        text-align: center;
-        margin-bottom: 1.5rem;
+        font-size: 2.8rem !important;
+        font-weight: 800 !important;
+        text-align: center !important;
+        margin-bottom: 2rem !important;
         color: #4f46e5 !important;
-        text-shadow: 2px 2px 4px rgba(79, 70, 229, 0.3);
-        background: linear-gradient(90deg, #4f46e5 0%, #9333ea 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        /* Fallback for browsers that don't support gradient text */
+        font-family: 'Inter', sans-serif !important;
+        letter-spacing: -0.02em !important;
+        line-height: 1.1 !important;
+        text-rendering: optimizeLegibility !important;
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+        /* Remove any blur effects */
+        text-shadow: none !important;
+        background: none !important;
+        -webkit-background-clip: initial !important;
+        -webkit-text-fill-color: initial !important;
     }
     
-    /* Ensure text is visible on all backgrounds */
-    h1, h2, h3, h4, h5, h6 {
-        color: #1f2937 !important;
+    /* Sidebar Styling */
+    .css-1d391kg {
+        background: rgba(255, 255, 255, 0.9) !important;
+        border-radius: 15px !important;
+        margin: 1rem !important;
+        backdrop-filter: blur(10px) !important;
     }
     
-    .stMarkdown h1 {
-        color: #4f46e5 !important;
-    }
+    /* Content Cards */
     .summary-card {
-        background-color: #ffffff;
-        padding: 1.8rem;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 2rem;
         border-radius: 16px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-        margin: 1.2rem 0;
-        font-size: 1.05rem;
-        line-height: 1.6;
+        border: 1px solid rgba(229, 231, 235, 0.5);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        margin: 1.5rem 0;
+        font-size: 1.1rem;
+        line-height: 1.7;
         color: #111827;
+        backdrop-filter: blur(10px);
     }
+    
     .summary-card h4 {
-        margin-bottom: 0.8rem;
+        margin-bottom: 1rem;
         color: #4f46e5;
+        font-weight: 600;
     }
+    
+    /* Statistics Container */
     .stats-container {
         display: flex;
         justify-content: space-evenly;
-        margin: 1.2rem 0;
+        margin: 2rem 0;
         gap: 1rem;
+        flex-wrap: wrap;
     }
+    
     .stat-box {
-        background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-        padding: 1.2rem;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1.5rem;
         border-radius: 12px;
         text-align: center;
-        border: 1px solid #e5e7eb;
+        border: 1px solid rgba(229, 231, 235, 0.5);
         min-width: 140px;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        flex: 1;
     }
+    
     .stat-box h4 {
-        font-size: 1rem;
-        margin-bottom: 0.4rem;
-        color: #374151;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        color: #6b7280;
+        font-weight: 500;
     }
+    
     .stat-box p {
-        font-size: 1.1rem;
-        font-weight: 600;
+        font-size: 1.2rem;
+        font-weight: 700;
         color: #111827;
+        margin: 0;
     }
+    
+    /* Message Styling */
     .error-message {
-        background-color: #fef2f2;
-        color: #b91c1c;
+        background: rgba(254, 242, 242, 0.9);
+        color: #dc2626;
         padding: 1rem;
-        border-radius: 10px;
-        border-left: 6px solid #ef4444;
+        border-radius: 12px;
+        border-left: 4px solid #ef4444;
         font-weight: 500;
+        backdrop-filter: blur(10px);
     }
+    
     .success-message {
-        background-color: #ecfdf5;
-        color: #065f46;
+        background: rgba(236, 253, 245, 0.9);
+        color: #059669;
         padding: 1rem;
-        border-radius: 10px;
-        border-left: 6px solid #10b981;
+        border-radius: 12px;
+        border-left: 4px solid #10b981;
         font-weight: 500;
+        backdrop-filter: blur(10px);
     }
+    
+    /* Button Styling */
+    .stButton > button {
+        background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 2rem !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3) !important;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4) !important;
+    }
+    
+    /* Input Styling */
+    .stTextArea > div > div > textarea {
+        background: rgba(255, 255, 255, 0.9) !important;
+        border: 1px solid rgba(229, 231, 235, 0.5) !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(10px) !important;
+    }
+    
+    /* Slider Styling */
+    .stSlider > div > div > div > div {
+        background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%) !important;
+    }
+    
+    /* File Uploader */
+    .stFileUploader > div {
+        background: rgba(255, 255, 255, 0.9) !important;
+        border: 2px dashed rgba(79, 70, 229, 0.3) !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(10px) !important;
+    }
+    
+    /* Links */
     a {
-        text-decoration: none;
-        color: #2563eb;
-        font-weight: 600;
+        text-decoration: none !important;
+        color: #4f46e5 !important;
+        font-weight: 600 !important;
     }
+    
     a:hover {
-        color: #1e40af;
+        color: #3730a3 !important;
     }
+    
     /* Footer */
     .footer {
         text-align: center;
-        color: #6b7280;
-        margin-top: 2rem;
+        color: rgba(107, 114, 128, 0.8);
+        margin-top: 3rem;
         font-size: 0.9rem;
+        backdrop-filter: blur(10px);
+    }
+    
+    /* Fix text rendering globally */
+    * {
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+        text-rendering: optimizeLegibility !important;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .main-header {
+            font-size: 2rem !important;
+        }
+        
+        .stats-container {
+            flex-direction: column;
+        }
+        
+        .stat-box {
+            margin-bottom: 1rem;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
-
 
 
 class SummarizerClient:
@@ -219,6 +313,7 @@ def create_download_link(text: str, filename: str = "summary.txt") -> str:
     b64 = base64.b64encode(text.encode()).decode()
     href = f'<a href="data:file/txt;base64,{b64}" download="{filename}">📄 Download Summary as TXT</a>'
     return href
+
 
 def main():
     """Main Streamlit application."""
