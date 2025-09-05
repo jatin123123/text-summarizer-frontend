@@ -120,4 +120,4 @@ if submitted:
             c3.metric("Model", result["model_used"])
 
 st.divider()
-st.caption("Powered by a FastAPI backend and Hugging Face Transformers.")
+st.caption("Created by Jatin Jangid")
