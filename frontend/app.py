@@ -20,6 +20,15 @@ MAX_TEXT_LENGTH = 50000  # Character limit for input text
 st.markdown("""
 <style>
     /* Global */
+    .stApp {
+        background-color: #f9fafb;
+    }
+    
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    
     body {
         font-family: 'Inter', sans-serif;
         background: #f9fafb;
@@ -30,9 +39,21 @@ st.markdown("""
         font-weight: 800;
         text-align: center;
         margin-bottom: 1.5rem;
+        color: #4f46e5 !important;
+        text-shadow: 2px 2px 4px rgba(79, 70, 229, 0.3);
         background: linear-gradient(90deg, #4f46e5 0%, #9333ea 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        /* Fallback for browsers that don't support gradient text */
+    }
+    
+    /* Ensure text is visible on all backgrounds */
+    h1, h2, h3, h4, h5, h6 {
+        color: #1f2937 !important;
+    }
+    
+    .stMarkdown h1 {
+        color: #4f46e5 !important;
     }
     .summary-card {
         background-color: #ffffff;
