@@ -29,9 +29,12 @@ st.markdown("""
         font-weight: 800;
         text-align: center;
         margin-bottom: 1.5rem;
+        color: #4f46e5 !important;
+        text-shadow: 2px 2px 4px rgba(79, 70, 229, 0.3);
         background: linear-gradient(90deg, #4f46e5 0%, #9333ea 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        /* Fallback for browsers that don't support gradient text */
     }
     .summary-card {
         background-color: #ffffff;
@@ -106,7 +109,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
 
 class SummarizerClient:
     """Client class to handle communication with the FastAPI backend."""
