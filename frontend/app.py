@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-API_URL = "http://localhost:7860"  # Update to your FastAPI backend url if different
+API_URL = "https://jatin12312-text-summarizer.hf.space" # Update to your FastAPI backend url if different
 
 st.set_page_config(page_title="Text Summarizer", page_icon="🤖", layout="centered")
 
