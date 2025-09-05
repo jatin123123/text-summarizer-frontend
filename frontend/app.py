@@ -16,6 +16,7 @@ st.set_page_config(
 # Constants
 BACKEND_URL = "https://jatin12312-text-summarizer.hf.space"
 MAX_TEXT_LENGTH = 50000  # Character limit for input text
+
 st.markdown("""
 <style>
     /* Global */
@@ -30,11 +31,13 @@ st.markdown("""
         text-align: center;
         margin-bottom: 1.5rem;
         color: #4f46e5 !important;
-        text-shadow: 2px 2px 4px rgba(79, 70, 229, 0.3);
-        background: linear-gradient(90deg, #4f46e5 0%, #9333ea 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        /* Fallback for browsers that don't support gradient text */
+        /* Removed text-shadow and gradient for crisp text */
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        letter-spacing: -0.02em;
+        /* Better font rendering */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
     }
     .summary-card {
         background-color: #ffffff;
@@ -106,6 +109,21 @@ st.markdown("""
         color: #6b7280;
         margin-top: 2rem;
         font-size: 0.9rem;
+    }
+    /* Better text rendering for all elements */
+    * {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+    /* Ensure main container has proper styling */
+    .stApp {
+        background: #f9fafb;
+    }
+    /* Fix Streamlit specific styling issues */
+    .stMarkdown h1 {
+        font-weight: 800 !important;
+        color: #4f46e5 !important;
     }
 </style>
 """, unsafe_allow_html=True)
