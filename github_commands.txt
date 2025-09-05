@@ -1,0 +1,17 @@
+# 🚀 GitHub Deployment Commands
+
+## Replace YOUR_USERNAME and YOUR_REPO_NAME with your actual values
+
+# Connect to your GitHub repository
+git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+
+# Set main branch
+git branch -M main
+
+# Push to GitHub
+git push -u origin main
+
+# Example (replace with your actual repository):
+# git remote add origin https://github.com/Jatin12312/ai-text-summarizer.git
+# git branch -M main  
+# git push -u origin main
