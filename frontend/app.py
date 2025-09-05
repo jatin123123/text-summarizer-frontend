@@ -1,146 +1,123 @@
 import streamlit as st
 import requests
 
-API_URL = "https://jatin12312-text-summarizer.hf.space"
+DEFAULT_API_URL = "https://jatin12312-text-summarizer.hf.space"
 
-st.set_page_config(
-    page_title="Text Summarizer AI",
-    page_icon="🧠",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Text Summarizer", page_icon="🧠", layout="centered")
 
-def fetch_health():
+# -----------------------------
+# Helpers
+# -----------------------------
+@st.cache_data(ttl=30)
+def check_health(api_url: str):
     try:
-        resp = requests.get(f"{API_URL}/health", timeout=4)
-        if resp.ok:
-            data = resp.json()
-            return ("healthy", data.get("model_info", {}))
-        return ("unhealthy", {})
+        r = requests.get(f"{api_url}/health", timeout=6)
+        if r.ok:
+            data = r.json()
+            return {"status": "healthy", "model_info": data.get("model_info", {})}, None
+        else:
+            # Attempt to read structured error
+            data = {}
+            try:
+                data = r.json()
+            except Exception:
+                pass
+            return {"status": "unhealthy", "detail": data.get("detail") or data.get("error")}, None
     except Exception as e:
-        return ("unreachable", {})
+        return None, f"Health check failed: {e}"
 
-def summarize_api(text, min_length, max_length):
+def summarize(api_url: str, text: str, min_len: int, max_len: int):
     try:
-        payload = {
-            "text": text,
-            "min_length": int(min_length),
-            "max_length": int(max_length)
-        }
-        resp = requests.post(f"{API_URL}/summarize", json=payload, timeout=20)
-        if resp.ok:
-            return resp.json(), None
+        payload = {"text": text, "min_length": int(min_len), "max_length": int(max_len)}
+        r = requests.post(f"{api_url}/summarize", json=payload, timeout=30)
+        if r.ok:
+            return r.json(), None
         else:
-            error_data = resp.json()
-            return None, error_data.get('error', 'Unknown error')
+            # Backend may return {"error": "...", "detail": "..."} in handlers
+            try:
+                err = r.json()
+                return None, err.get("error") or err.get("detail") or f"HTTP {r.status_code}"
+            except Exception:
+                return None, f"HTTP {r.status_code}"
     except Exception as e:
-        return None, f"Connection error: {str(e)}"
+        return None, f"Request failed: {e}"
 
-def stylish_card(title, value, icon):
-    st.markdown(
-        f"""
-        <div style="background: var(--background-secondary); border-radius: 8px; padding: 18px; margin-bottom: 12px; box-shadow: 0 0 4px rgba(0,0,0,0.08); display: flex; align-items: center;">
-            <div style="font-size: 1.6rem;">{icon}</div>
-            <div style="margin-left: 12px;">
-                <span style="font-weight: 600; font-size: 1.05rem;">{title}</span>
-                <br>
-                <span style="color: var(--text-secondary);">{value}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-status, model_info = fetch_health()
-
-# Tabs for layout
-tab1, tab2 = st.tabs(["Summarize Text", "About Model"])
-
-with tab1:
-    st.title("🧠 Modern Text Summarizer")
-    st.write("Paste your text below and generate concise, accurate summaries using advanced AI.")
-
-    st.markdown("#### Input")
-    text = st.text_area(
-        "Enter text to summarize", height=160, 
-        placeholder="Paste an article, news story, or long paragraph (≥10 characters)..."
-    )
-
-    col1, col2, _ = st.columns([1,1,2])
-    with col1:
-        min_length = st.slider("Minimum summary length", 10, 100, 30)
-    with col2:
-        max_length = st.slider("Maximum summary length", 30, 500, 150)
-
-    st.markdown("")
-
-    submit = st.button("✨ Summarize!", type="primary")
-
-    if submit:
-        if not text or len(text.strip()) < 10:
-            st.warning("Please enter at least 10 characters of text.")
-        elif min_length >= max_length:
-            st.warning("Minimum length must be less than maximum length.")
-        elif status != "healthy":
-            st.error("API unavailable or model not loaded. Please try again later.")
-        else:
-            with st.spinner("Generating summary..."):
-                result, error = summarize_api(text, min_length, max_length)
-                if error:
-                    st.error(f"Error: {error}")
-                elif result:
-                    stylish_card("Summary", result["summary"], "📝")
-                    # Expandable metadata section
-                    with st.expander("Summary Metadata"):
-                        stylish_card("Original Length", str(result["original_length"]) + " characters", "📜")
-                        stylish_card("Summary Length", str(result["summary_length"]) + " characters", "✂️")
-                        stylish_card("Model Used", result["model_used"], "🤖")
-                else:
-                    st.error("Unknown error occurred.")
-
-    st.markdown("---")
-
-    # Quick health/status display
-    if status == "healthy":
-        stylish_card("API Status", "Healthy and Connected", "✅")
-        stylish_card("Model", model_info.get("model_name", "N/A"), "🤖")
-    elif status == "unhealthy":
-        stylish_card("API Status", "Unhealthy (Model not loaded)", "⚠️")
-    else:
-        stylish_card("API Status", "Unreachable", "❌")
-
-with tab2:
-    st.header("Model Information")
-    st.write("This app uses Hugging Face Transformers for abstractive text summarization. Ideal for articles, news, and research content.")
-    if model_info:
-        stylish_card("Model Name", model_info.get("model_name", "N/A"), "🤖")
-        # Display more properties if present
-        for k, v in model_info.items():
-            if k != "model_name":
-                stylish_card(k.replace("_"," ").title(), v, "ℹ️")
-    st.markdown("---")
-    st.write("Visit the [project page](https://huggingface.co/facebook/bart-large-cnn) for technical details.")
-
-# Footer in sidebar
+# -----------------------------
+# Sidebar (classic inputs/status)
+# -----------------------------
 with st.sidebar:
-    st.header("Help & Settings")
-    st.markdown(
-        """
-        **Instructions**  
-        - Paste text, select summary length, and click Summarize  
-        - Use the tabs above for information and troubleshooting  
-        - Works best with texts longer than a paragraph
+    st.title("Controls")
+    api_url = st.text_input("API URL", value=DEFAULT_API_URL)
+    st.caption("Change only if the backend URL differs.")
 
-        **Appearance**  
-        - Toggle site theme in Streamlit settings 🌗
-        """
+    st.divider()
+    st.subheader("Summary length")
+    min_length = st.slider("Minimum", min_value=10, max_value=100, value=30, step=1)
+    max_length = st.slider("Maximum", min_value=30, max_value=500, value=150, step=5)
+
+    st.divider()
+    st.subheader("API status")
+    health, health_err = check_health(api_url)
+    if health_err:
+        st.error("Unreachable")
+        st.caption(health_err)
+    else:
+        if health and health.get("status") == "healthy":
+            st.success("Healthy")
+            model_name = (health.get("model_info") or {}).get("model_name", "Unknown model")
+            st.caption(f"Model: {model_name}")
+        elif health and health.get("status") == "unhealthy":
+            st.warning("Unhealthy")
+            if health.get("detail"):
+                st.caption(health.get("detail"))
+
+# -----------------------------
+# Main content (classic single column)
+# -----------------------------
+st.title("Text Summarizer 🧠")
+st.write("Paste text, set preferred summary length, and generate a concise summary.")
+
+# Input form to avoid reruns on every widget interaction
+with st.form("summarize_form", clear_on_submit=False):
+    text = st.text_area(
+        "Text to summarize",
+        height=220,
+        placeholder="Paste an article, post, or paragraph (≥ 10 characters)...",
     )
-    st.markdown("---")
-    st.write("Made with ❤️ by [Jatin](https://huggingface.co/spaces/jatin12312/text-summarizer)")
+    # Helpful counters
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.caption(f"Characters: {len(text.strip()) if text else 0}")
+    with col_b:
+        st.caption(f"Min {min_length} • Max {max_length}")
 
-# Optional: advanced styling
-st.markdown("""
-    <style>
-    [data-testid="stSidebar"] span, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h3 {
-        color: var(--primary-color);
-    }
-    </style>
-""", unsafe_allow_html=True)
+    submitted = st.form_submit_button("Summarize")
+
+# Validation and request
+if submitted:
+    cleaned = (text or "").strip()
+    if len(cleaned) < 10:
+        st.warning("Input text must be at least 10 characters.")
+    elif min_length >= max_length:
+        st.warning("Minimum length must be less than maximum length.")
+    elif not health or health.get("status") != "healthy":
+        st.error("API unavailable or model not loaded.")
+    else:
+        with st.spinner("Generating summary..."):
+            result, err = summarize(api_url, cleaned, min_length, max_length)
+        if err:
+            st.error("Failed to generate summary.")
+            st.caption(err)
+        else:
+            st.subheader("Summary")
+            st.write(result["summary"])
+
+            st.divider()
+            st.subheader("Details")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Original length", f"{result['original_length']} chars")
+            c2.metric("Summary length", f"{result['summary_length']} chars")
+            c3.metric("Model", result["model_used"])
+
+st.divider()
+st.caption("Powered by a FastAPI backend and Hugging Face Transformers.")
