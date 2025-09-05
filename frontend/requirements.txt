@@ -1,0 +1,6 @@
+# Streamlit Frontend Dependencies
+streamlit==1.28.1
+
+# HTTP Client for Backend Communication
+httpx==0.25.2
+requests==2.31.0
