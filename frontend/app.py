@@ -1,117 +1,146 @@
 import streamlit as st
 import requests
 
-API_URL = "https://jatin12312-text-summarizer.hf.space" 
+API_URL = "https://jatin12312-text-summarizer.hf.space"
 
-# --- Custom Styles ---
-st.markdown("""
-    <style>
-        .main {
-            background-color: #F7F8FC;
-        }
-        .stTextArea textarea {
-            font-size: 1.2em !important;
-            color: #293241;
-            background-color: #EDF2F7 !important;
-            border-radius: 10px !important;
-        }
-        .stButton>button {
-            color: white !important;
-            background: linear-gradient(90deg, #3D5A80 0%, #293241 100%);
-            border-radius: 8px;
-            font-size: 1.1em;
-            padding: 0.6em 2em;
-        }
-        .stNumberInput input {
-            font-size: 1.1em;
-            background-color: #EDF2F7;
-            border-radius: 7px;
-            color: #293241;
-        }
-        h1 {
-            color: #293241;
-        }
-        h2, h3 {
-            color: #3D5A80;
-        }
-        .stMarkdown {
-            font-size: 1.1em;
-            color: #293241 !important;
-        }
-    </style>
-""", unsafe_allow_html=True)
+st.set_page_config(
+    page_title="Text Summarizer AI",
+    page_icon="🧠",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# --- Page Header ---
-st.markdown("<h1>📝 Modern Text Summarizer</h1>", unsafe_allow_html=True)
-st.markdown("#### Summarize any lengthy document with powerful AI in seconds.")
-
-# --- Sidebar: Model Health & Info ---
-with st.sidebar:
-    st.image("https://huggingface.co/front/assets/hf-logo.svg", width=120)
-    st.markdown("<h3>API Health</h3>", unsafe_allow_html=True)
+def fetch_health():
     try:
-        health = requests.get(f"{API_URL}/health", timeout=3)
-        if health.ok:
-            status = health.json().get("status", "unknown")
-            model_info = health.json().get("model_info", {})
-            st.success(f"API: {status.capitalize()}")
-            st.info(f"Model: {model_info.get('model_name', 'N/A')}")
-            if "version" in model_info:
-                st.info(f"Version: {model_info['version']}")
+        resp = requests.get(f"{API_URL}/health", timeout=4)
+        if resp.ok:
+            data = resp.json()
+            return ("healthy", data.get("model_info", {}))
+        return ("unhealthy", {})
+    except Exception as e:
+        return ("unreachable", {})
+
+def summarize_api(text, min_length, max_length):
+    try:
+        payload = {
+            "text": text,
+            "min_length": int(min_length),
+            "max_length": int(max_length)
+        }
+        resp = requests.post(f"{API_URL}/summarize", json=payload, timeout=20)
+        if resp.ok:
+            return resp.json(), None
         else:
-            st.error("API unhealthy or model not loaded.")
-    except Exception:
-        st.error("Unable to connect to API.")
+            error_data = resp.json()
+            return None, error_data.get('error', 'Unknown error')
+    except Exception as e:
+        return None, f"Connection error: {str(e)}"
+
+def stylish_card(title, value, icon):
+    st.markdown(
+        f"""
+        <div style="background: var(--background-secondary); border-radius: 8px; padding: 18px; margin-bottom: 12px; box-shadow: 0 0 4px rgba(0,0,0,0.08); display: flex; align-items: center;">
+            <div style="font-size: 1.6rem;">{icon}</div>
+            <div style="margin-left: 12px;">
+                <span style="font-weight: 600; font-size: 1.05rem;">{title}</span>
+                <br>
+                <span style="color: var(--text-secondary);">{value}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+status, model_info = fetch_health()
+
+# Tabs for layout
+tab1, tab2 = st.tabs(["Summarize Text", "About Model"])
+
+with tab1:
+    st.title("🧠 Modern Text Summarizer")
+    st.write("Paste your text below and generate concise, accurate summaries using advanced AI.")
+
+    st.markdown("#### Input")
+    text = st.text_area(
+        "Enter text to summarize", height=160, 
+        placeholder="Paste an article, news story, or long paragraph (≥10 characters)..."
+    )
+
+    col1, col2, _ = st.columns([1,1,2])
+    with col1:
+        min_length = st.slider("Minimum summary length", 10, 100, 30)
+    with col2:
+        max_length = st.slider("Maximum summary length", 30, 500, 150)
+
+    st.markdown("")
+
+    submit = st.button("✨ Summarize!", type="primary")
+
+    if submit:
+        if not text or len(text.strip()) < 10:
+            st.warning("Please enter at least 10 characters of text.")
+        elif min_length >= max_length:
+            st.warning("Minimum length must be less than maximum length.")
+        elif status != "healthy":
+            st.error("API unavailable or model not loaded. Please try again later.")
+        else:
+            with st.spinner("Generating summary..."):
+                result, error = summarize_api(text, min_length, max_length)
+                if error:
+                    st.error(f"Error: {error}")
+                elif result:
+                    stylish_card("Summary", result["summary"], "📝")
+                    # Expandable metadata section
+                    with st.expander("Summary Metadata"):
+                        stylish_card("Original Length", str(result["original_length"]) + " characters", "📜")
+                        stylish_card("Summary Length", str(result["summary_length"]) + " characters", "✂️")
+                        stylish_card("Model Used", result["model_used"], "🤖")
+                else:
+                    st.error("Unknown error occurred.")
 
     st.markdown("---")
-    st.markdown("##### About\nBuilt with FastAPI 🚀 & Hugging Face Transformers 🤗")
 
-# --- Main Input Form ---
-with st.form("summarize-form", clear_on_submit=False):
-    st.markdown("<h2>🔗 Paste Text Below</h2>", unsafe_allow_html=True)
-    text = st.text_area("Minimum 10 characters", height=220, max_chars=4096)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        min_length = st.number_input("Min summary length", min_value=10, max_value=100, value=50, help="Minimum number of tokens in summary.")
-    with col2:
-        max_length = st.number_input("Max summary length", min_value=30, max_value=500, value=150, help="Maximum number of tokens in summary.")
-    
-    submitted = st.form_submit_button("✨ Summarize Text")
-
-# --- Summary Output ---
-if submitted:
-    if not text or len(text.strip()) < 10:
-        st.error("🚫 Please enter at least 10 characters of text.")
-    elif min_length >= max_length:
-        st.warning("⚠️ Minimum length must be less than maximum length.")
+    # Quick health/status display
+    if status == "healthy":
+        stylish_card("API Status", "Healthy and Connected", "✅")
+        stylish_card("Model", model_info.get("model_name", "N/A"), "🤖")
+    elif status == "unhealthy":
+        stylish_card("API Status", "Unhealthy (Model not loaded)", "⚠️")
     else:
-        with st.spinner("Summarizing... Please wait."):
-            payload = {
-                "text": text.strip(),
-                "min_length": int(min_length),
-                "max_length": int(max_length)
-            }
-            try:
-                resp = requests.post(f"{API_URL}/summarize", json=payload, timeout=15)
-                if resp.ok:
-                    result = resp.json()
-                    st.markdown("<h3>✅ Summary</h3>", unsafe_allow_html=True)
-                    st.markdown(f"<div style='background-color:#EDF2F7;border-radius:7px;padding:1em;color:#293241;font-size:1.1em;'>{result['summary']}</div>", unsafe_allow_html=True)
-                    st.markdown(
-                        f"""
-                        <span style='color:#3D5A80;font-weight:bold;'>Original Length:</span> {result['original_length']} characters  
-                        <span style='color:#3D5A80;font-weight:bold;'>Summary Length:</span> {result['summary_length']} characters  
-                        <span style='color:#3D5A80;font-weight:bold;'>Model Used:</span> {result['model_used']}
-                        """, unsafe_allow_html=True
-                    )
-                else:
-                    error_msg = resp.json().get('error', 'Unknown error')
-                    detail_msg = resp.json().get('detail', '')
-                    st.error(f"🚫 Error: {error_msg}")
-                    st.markdown(f"<div style='color:#EE6C4D;'>{detail_msg}</div>", unsafe_allow_html=True)
-            except Exception as e:
-                st.error(f"❌ Failed to connect: {str(e)}")
+        stylish_card("API Status", "Unreachable", "❌")
 
-st.markdown("---")
-st.markdown("Powered by [Hugging Face Transformers](https://huggingface.co/) × [FastAPI](https://fastapi.tiangolo.com/) × [Streamlit](https://streamlit.io/)")
+with tab2:
+    st.header("Model Information")
+    st.write("This app uses Hugging Face Transformers for abstractive text summarization. Ideal for articles, news, and research content.")
+    if model_info:
+        stylish_card("Model Name", model_info.get("model_name", "N/A"), "🤖")
+        # Display more properties if present
+        for k, v in model_info.items():
+            if k != "model_name":
+                stylish_card(k.replace("_"," ").title(), v, "ℹ️")
+    st.markdown("---")
+    st.write("Visit the [project page](https://huggingface.co/facebook/bart-large-cnn) for technical details.")
+
+# Footer in sidebar
+with st.sidebar:
+    st.header("Help & Settings")
+    st.markdown(
+        """
+        **Instructions**  
+        - Paste text, select summary length, and click Summarize  
+        - Use the tabs above for information and troubleshooting  
+        - Works best with texts longer than a paragraph
+
+        **Appearance**  
+        - Toggle site theme in Streamlit settings 🌗
+        """
+    )
+    st.markdown("---")
+    st.write("Made with ❤️ by [Jatin](https://huggingface.co/spaces/jatin12312/text-summarizer)")
+
+# Optional: advanced styling
+st.markdown("""
+    <style>
+    [data-testid="stSidebar"] span, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h3 {
+        color: var(--primary-color);
+    }
+    </style>
+""", unsafe_allow_html=True)
