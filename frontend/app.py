@@ -16,7 +16,6 @@ st.set_page_config(
 # Constants
 BACKEND_URL = "https://jatin12312-text-summarizer.hf.space"
 MAX_TEXT_LENGTH = 50000  # Character limit for input text
-
 st.markdown("""
 <style>
     /* Global */
@@ -109,7 +108,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-
 class SummarizerClient:
     """Client class to handle communication with the FastAPI backend."""
     
@@ -198,6 +196,7 @@ def create_download_link(text: str, filename: str = "summary.txt") -> str:
     b64 = base64.b64encode(text.encode()).decode()
     href = f'<a href="data:file/txt;base64,{b64}" download="{filename}">📄 Download Summary as TXT</a>'
     return href
+
 
 def main():
     """Main Streamlit application."""
